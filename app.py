@@ -1,11 +1,58 @@
 from flask import Flask,render_template,redirect,request,url_for
 import mysql.connector
+import json
+import boto3
+from botocore.exceptions import ClientError
+
 app = Flask(__name__)
 
 print(__name__)
 
 if __name__ == '__main__':
       app.run(host='0.0.0.0', port=80)
+
+def get_secret():
+
+    secret_name = "dev/beta/myapp"
+    region_name = "us-east-1"
+    session = boto3.session.Session()
+    print("Session established")
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+    print("clinet got")
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'DecryptionFailureException':
+            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            # An error occurred on the server side.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            # You provided an invalid value for a parameter.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            # You provided a parameter value that is not valid for the current state of the resource.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            # We can't find the resource that you asked for.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+    else:
+        # Decrypts secret using the associated KMS CMK.
+        # Depending on whether the secret is a string or binary, one of these fields will be populated.
+        if 'SecretString' in get_secret_value_response:
+            secret = get_secret_value_response['SecretString']
+            return json.loads(secret)
 
 @app.route('/')
 def hello_world():
@@ -20,6 +67,8 @@ def hello_world():
     return "Hello... " + msg + data + ",  Click on <a href='/insert'>AddNew</a> to add Users"
 
 def read_DB():
+    data1 = get_secret()
+    print(data1)
     mydb = mysql.connector.connect(
               host="test-1.cbt0glpr7h4n.us-east-1.rds.amazonaws.com",
               user="admin",
