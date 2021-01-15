@@ -7,12 +7,13 @@ from botocore.exceptions import ClientError
 app = Flask(__name__)
 
 print(__name__)
-
+secrets1 = None
 if __name__ == '__main__':
       app.run(host='0.0.0.0', port=80)
 
 def get_secret():
-
+    if secrets1 != None:
+        return secrets1
     secret_name = "dev/beta/myapp"
     region_name = "us-east-1"
     session = boto3.session.Session()
@@ -67,15 +68,13 @@ def hello_world():
     return "Hello... " + msg + data + ",  Click on <a href='/insert'>AddNew</a> to add Users"
 
 def read_DB():
-    data1 = get_secret()
-    print(data1)
+    secrets1 = get_secret()
     mydb = mysql.connector.connect(
-              host="test-1.cbt0glpr7h4n.us-east-1.rds.amazonaws.com",
-              user="admin",
-              password="kandulaganesh",
-              database="TestRDSDB"
-            )
-
+              host=secrets1["host"],
+              user=secrets1["username"],
+              password=secrets1["password"],
+              database=secrets1["dbname"]
+           )
     mycursor=mydb.cursor()
     mycursor.execute("SELECT * FROM Persons")
     myresult = mycursor.fetchall()
@@ -89,13 +88,12 @@ def insert_Record():
 def read_form():
     id1=request.form["id"]
     name=request.form["name"]
-    print("Id is ",id)
-    print("Name is ",name)
+    secrets1 = get_secret()
     mydb = mysql.connector.connect(
-              host="test-1.cbt0glpr7h4n.us-east-1.rds.amazonaws.com",
-              user="admin",
-              password="kandulaganesh",
-              database="TestRDSDB"
+              host=secrets1["host"],
+              user=secrets1["username"],
+              password=secrets1["password"],
+              database=secrets1["dbname"]
            )
     sql = "INSERT INTO Persons (ID, Name) VALUES (%s, %s)"
     val = (id1, name)
