@@ -6,14 +6,11 @@ from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
-print(__name__)
-secrets1 = None
+secret_ = None
 if __name__ == '__main__':
       app.run(host='0.0.0.0', port=80)
 
 def get_secret():
-    if secrets1 != None:
-        return secrets1
     secret_name = "dev/beta/myapp"
     region_name = "us-east-1"
     session = boto3.session.Session()
@@ -22,7 +19,6 @@ def get_secret():
         service_name='secretsmanager',
         region_name=region_name
     )
-    print("clinet got")
     try:
         get_secret_value_response = client.get_secret_value(
             SecretId=secret_name
@@ -56,24 +52,24 @@ def get_secret():
             return json.loads(secret)
 
 @app.route('/')
-def hello_world():
+def index():
     users = read_DB()
     msg = "Users available are "
-    data = ""
+    html_script = ""
     if len(users) == 0:
 	msg = "No Users Available, "
     for user in users:
-        data=data + user[1] + "\n"
-    data = data + "  "
-    return "Hello... " + msg + data + ",  Click on <a href='/insert'>AddNew</a> to add Users"
+        html_script = html_script + user[1] + "\n"
+    html_script = html_script + "  "
+    return "Hello... " + msg + html_script + ",  Click on <a href='/insert'>AddNew</a> to add Users"
 
 def read_DB():
-    secrets1 = get_secret()
+    secrets = get_secret()
     mydb = mysql.connector.connect(
-              host=secrets1["host"],
-              user=secrets1["username"],
-              password=secrets1["password"],
-              database=secrets1["dbname"]
+              host=secrets["host"],
+              user=secrets["username"],
+              password=secrets["password"],
+              database=secrets["dbname"]
            )
     mycursor=mydb.cursor()
     mycursor.execute("SELECT * FROM Persons")
@@ -88,18 +84,18 @@ def insert_Record():
 def read_form():
     id1=request.form["id"]
     name=request.form["name"]
-    secrets1 = get_secret()
+    secrets = get_secret()
     mydb = mysql.connector.connect(
-              host=secrets1["host"],
-              user=secrets1["username"],
-              password=secrets1["password"],
-              database=secrets1["dbname"]
+              host=secrets["host"],
+              user=secrets["username"],
+              password=secrets["password"],
+              database=secrets["dbname"]
            )
     sql = "INSERT INTO Persons (ID, Name) VALUES (%s, %s)"
     val = (id1, name)
     mycursor=mydb.cursor()
     mycursor.execute(sql, val)
     mydb.commit()
-    return redirect(url_for('hello_world'))
+    return redirect(url_for('index'))
 
 
