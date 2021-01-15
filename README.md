@@ -1,1 +1,1 @@
-# Preparing for AWS Associate Developer
+# Preparing for AWS Developer Associate
